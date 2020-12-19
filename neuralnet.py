@@ -13,20 +13,6 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 # %%
-# constant tensor
-x = tf.constant([[5, 2], [1, 3]])
-x
-# %%
-x.numpy()
-# %%
-# random constant tensor
-y = tf.random.normal(shape=(3,3), mean=0.0)
-y
-# %%
-# variable tensor with y as initial value
-a = tf.Variable(y)
-a
-# %%
 df_train_orig_csv = pd.read_csv("./data/train.csv.gz")
 df_train_categorical = df_train_orig_csv.select_dtypes(include=['object'])
 df_train_onehot = pd.get_dummies(df_train_categorical)
@@ -132,6 +118,7 @@ predictions = list(itertools.islice(y, testing_set.shape[0]))
 # reality = pd.DataFrame(prepro.inverse_transform(testing_set), columns = COLUMNS).SalePrice
 reality = pd.DataFrame(testing_set, columns = COLUMNS).SalePrice
 # %%
+from sklearn.metrics import mean_squared_error
 mpl.rc('xtick', labelsize=30) 
 mpl.rc('ytick', labelsize=30) 
 
@@ -144,6 +131,7 @@ plt.ylabel('Reality', fontsize = 30)
 plt.title('Predictions x Reality on dataset Test', fontsize = 30)
 ax.plot([reality.min(), reality.max()], [reality.min(), reality.max()], 'k--', lw=4)
 plt.show()
+mean_squared_error(predictions, reality)
 # %%
 mat_test = np.matrix(df_test)
 test = pd.DataFrame(prepro_test.transform(mat_test),columns = FEATURES_TRAIN)
