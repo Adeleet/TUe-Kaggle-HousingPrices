@@ -15,9 +15,18 @@ import numpy as np
 
 # %%
 DATA_BASE_URL = "https://github.com/Adeleet/TUe-Kaggle-HousingPrices/raw/main/data"
-df_train = pd.read_csv(f"{DATA_BASE_URL}/train.csv.gz")
-df_test = pd.read_csv(f"{DATA_BASE_URL}/test.csv.gz")
+# df_train = pd.read_csv(f"{DATA_BASE_URL}/train.csv.gz")
+# df_test = pd.read_csv(f"{DATA_BASE_URL}/test.csv.gz")
+df_train = pd.read_csv("./data/train.csv.gz")
+df_test = pd.read_csv("./data/test.csv.gz")
 
+
+# %% [markdown]
+#### Convert numerical variables to categorical
+
+# %%
+df_train.plot.scatter(x="OverallQual",y="SalePrice")
+df_train["OverallQual"] = df_train["OverallQual"].astype("str")
 # %%
 CORR_THRESHOLD = 0.4  # vars should have at least this correlation to be considered as predictor
 var_corr = (
@@ -27,11 +36,13 @@ predictor_names = var_corr[
     (var_corr > CORR_THRESHOLD) & (var_corr < 1)
 ].index  # get predictor names above threshold
 
+predictor_names = list(predictor_names) + ["OverallQual"]
+# %%
+train_data = df_train[predictor_names + ["SalePrice"]]
+test_data = df_test[predictor_names]
 
 # %%
-train_data = df_train[list(predictor_names) + ["SalePrice"]]
-test_data = df_test[list(predictor_names)]
-
+pd.get_dummies(train_data)
 
 # %%
 for dataset in [train_data, test_data]:
@@ -71,3 +82,4 @@ df_submission["SalePrice"] = pred = reg.predict(test_data)
 df_submission.to_csv("submissions/submission_test.csv.gz", index=False)
 
 # %%
+
