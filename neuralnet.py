@@ -27,11 +27,27 @@ y
 a = tf.Variable(y)
 a
 # %%
-df_train_orig = pd.read_csv("./data/train.csv.gz")
-df_train_orig = df_train_orig.select_dtypes(exclude=['object'])
+df_train_orig_csv = pd.read_csv("./data/train.csv.gz")
+df_train_categorical = df_train_orig_csv.select_dtypes(include=['object'])
+df_train_onehot = pd.get_dummies(df_train_categorical)
+df_train_orig = df_train_orig_csv.select_dtypes(exclude=['object'])
 df_train_orig.fillna(0, inplace=True)
 df_train_orig.drop('Id', axis=1, inplace=True)
-df_train = pd.DataFrame(df_train_orig)
+df_train = df_train_orig.join(df_train_onehot)
+# %%
+df_test_orig = pd.read_csv("./data/test.csv.gz")
+df_test_categorical = df_test_orig.select_dtypes(include=['object'])
+df_test_onehot = pd.get_dummies(df_test_categorical)
+df_test = df_test_orig.select_dtypes(exclude=['object'])
+df_test.fillna(0, inplace=True)
+ID = df_test.Id
+df_test.drop('Id', axis=1, inplace=True)
+df_test = df_test.join(df_test_onehot)
+# %%
+df_train, df_test = df_train.align(df_test, axis=1)
+df_test.drop('SalePrice', axis=1, inplace=True)
+df_test.fillna(0, inplace=True)
+df_train.fillna(0, inplace=True)
 # %%
 clf = IsolationForest(max_samples = 100, random_state = 42)
 clf.fit(df_train)
@@ -52,7 +68,7 @@ FEATURES_TRAIN.remove('SalePrice')
 # %%
 mat_train = np.matrix(df_train)
 # mat_test  = np.matrix(test)
-mat_new = np.matrix(df_train.drop('SalePrice', axis = 1))
+mat_x = np.matrix(df_train.drop('SalePrice', axis = 1))
 mat_y = np.matrix(df_train.SalePrice).reshape((-1,1))
 
 prepro_y = MinMaxScaler()
@@ -62,7 +78,7 @@ prepro = MinMaxScaler()
 prepro.fit(mat_train)
 
 prepro_test = MinMaxScaler()
-prepro_test.fit(mat_new)
+prepro_test.fit(mat_x)
 df_train = pd.DataFrame(prepro.transform(mat_train),columns = list(df_train.columns))
 # %%
 # List of features
@@ -93,7 +109,7 @@ feature_cols = training_set[FEATURES_TRAIN]
 labels = training_set["SalePrice"].values
 # %%
 model = tf.keras.Sequential()
-model.add(Dense(300, input_dim=36, kernel_initializer='normal', activation='relu'))
+model.add(Dense(300, input_dim=288, kernel_initializer='normal', activation='relu'))
 model.add(Dense(300, kernel_initializer='normal', activation='relu'))
 model.add(Dense(200, kernel_initializer='normal', activation='relu'))
 model.add(Dense(200, kernel_initializer='normal', activation='relu'))
@@ -101,7 +117,7 @@ model.add(Dense(1, kernel_initializer='normal'))
 # Compile model
 model.compile(loss='mean_squared_error', optimizer=keras.optimizers.Adadelta())
 
-model.fit(np.array(feature_cols).astype('float32'), np.array(labels), epochs=500, batch_size=3)
+model.fit(np.array(feature_cols).astype('float32'), np.array(labels), epochs=2000, batch_size=10)
 # %%
 model.evaluate(np.array(feature_cols), np.array(labels))
 # %%
@@ -128,12 +144,6 @@ plt.ylabel('Reality', fontsize = 30)
 plt.title('Predictions x Reality on dataset Test', fontsize = 30)
 ax.plot([reality.min(), reality.max()], [reality.min(), reality.max()], 'k--', lw=4)
 plt.show()
-# %%
-df_test = pd.read_csv("./data/test.csv.gz")
-df_test = df_test.select_dtypes(exclude=['object'])
-df_test.fillna(0, inplace=True)
-ID = df_test.Id
-df_test.drop('Id', axis=1, inplace=True)
 # %%
 mat_test = np.matrix(df_test)
 test = pd.DataFrame(prepro_test.transform(mat_test),columns = FEATURES_TRAIN)
