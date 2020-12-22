@@ -13,11 +13,115 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from preprocess import pre
 import numpy as np
+# pre-processing
+from scipy import stats
+from scipy.stats import norm, skew 
+# section one hot encoding
+from sklearn.preprocessing import OneHotEncoder
+
 
 # %%
 DATA_BASE_URL = "https://github.com/Adeleet/TUe-Kaggle-HousingPrices/raw/main/data"
 df_train = pd.read_csv(f"{DATA_BASE_URL}/train.csv.gz")
 df_test = pd.read_csv(f"{DATA_BASE_URL}/test.csv.gz")
+
+# %% 
+test = df_test.copy()
+train = df_train.copy()
+
+
+
+# %% 
+
+## Creating normal distribution of target variable to increase accuracy of linear models
+
+# y = train['SalePrice']
+# plt.figure(); plt.title('Log Normal')
+# sns.distplot(y, kde=False, fit=stats.lognorm)
+
+
+# train['SalePrice'] = np.log1p(train['SalePrice'])
+# sns.distplot(train['SalePrice'], fit = norm)
+
+
+
+#%%
+quants = [col for col in train.columns if train.dtypes[col] != 'object']
+quants.remove('SalePrice'), quants.remove('Id')
+cats = [col for col in train.columns if train.dtypes[col] == 'object']
+
+# %%
+## PLOTTING NA VALUES
+# CATS
+f, ax = plt.subplots(figsize=(15, 12))
+plt.xticks(rotation = 90)
+sns.barplot(cats, train[cats].isna().sum(), order=train[cats].isna().sum().sort_values().index[::-1]).set_title('Categorical variables - Na values')
+# %%
+# QUANTS
+f, ax = plt.subplots(figsize=(15, 12))
+plt.xticks(rotation = 90)
+sns.barplot(quants, train[quants].isna().sum(), order=train[quants].isna().sum().sort_values().index[::-1]).set_title('Quantitative variables - Na values')
+
+
+###
+
+# %%
+# TODO -> REMOVING OUTLIERS FROM TRAINs
+###
+
+# %% 
+# TODO -> SKEW FEATURES TO IMPROVE LINEAR MODELS
+###
+
+##
+# TODO -> DIFFERENTIATE ORDINAL AND CATEGORICAL
+
+
+# %%
+# fixing categorical NA's
+# train['PoolQC'].value_counts() > here we see the 4 categores, last one should be 'no pool'
+train['PoolQC'].fillna('No pool', inplace = True)
+test['PoolQC'].fillna('No pool', inplace = True)
+
+
+## generic removal of NA's -> TODO improve with domain knowledge?
+train[cats] = train[cats].apply(lambda x: x.fillna('None'))
+test[cats] = test[cats].apply(lambda x: x.fillna('None'))
+
+
+# %%
+# fixing quant NA's by replacement -> TODO perhaps imputation by regression is better
+
+# TODO Non generic solution
+train[quants] = train[quants].apply(lambda x: x.fillna(0))
+test[quants] = test[quants].apply(lambda x: x.fillna(0))
+
+
+# %% 
+# ONE HOT ENCODING VARIABLES
+# -> this makes sure no 'objects' remain in the train/test dataframes
+
+
+### TODO FIX THIS
+
+encoder = OneHotEncoder(handle_unknown="ignore")
+encoder.fit(train[cats])
+
+X = train.drop("SalePrice", axis=1)
+y = train["SalePrice"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+
+X_train_en = encoder.transform(X_train[cats])
+X_test_en = encoder.transform(X_test[cats])
+
+
+
+
+####
+# old stuff
+
+
 
 # %%
 CORR_THRESHOLD = 0.4  # vars should have at least this correlation to be considered as predictor
