@@ -87,7 +87,12 @@ sns.barplot(quants, train[quants].isna().sum(), order=train[quants].isna().sum()
 # TODO -> DIFFERENTIATE ORDINAL AND CATEGORICAL
 # ???? 
 
-
+cols = list(train.columns)
+n = train.shape[0]
+finalcols = []
+for col in cols:
+    if not any(train['PoolQC'].value_counts() > 0.99*n):
+        finalcols += cols
 
 # %%
 # fixing categorical NA's
