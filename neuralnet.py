@@ -11,7 +11,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import IsolationForest
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-
+# %%
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 # %%
 df_train_orig_csv = pd.read_csv("./data/train.csv.gz")
 df_train_categorical = df_train_orig_csv.select_dtypes(include=['object'])
@@ -36,8 +38,8 @@ df_test.fillna(0, inplace=True)
 df_train.fillna(0, inplace=True)
 # %%
 clf = IsolationForest(max_samples = 100, random_state = 42)
-clf.fit(df_train)
-y_noano = clf.predict(df_train)
+clf.fit(df_train_orig)
+y_noano = clf.predict(df_train_orig)
 y_noano = pd.DataFrame(y_noano, columns = ['Top'])
 y_noano[y_noano['Top'] == 1].index.values
 
@@ -46,15 +48,22 @@ df_train.reset_index(drop = True, inplace = True)
 print("Number of Outliers:", y_noano[y_noano['Top'] == -1].shape[0])
 print("Number of rows without outliers:", df_train.shape[0])
 # %%
-FEATURES = list(df_train.columns)
-FEATURES_TRAIN = list(df_train.columns)
+cols = list(df_train.columns)
+n = df_train.shape[0]
+finalcols = []
+for col in cols:
+    if not any(df_train[col].value_counts() > 0.95*n):
+        finalcols.append(col)
+# %%
+FEATURES = finalcols
+FEATURES_TRAIN = list(finalcols)
 
 FEATURES
 FEATURES_TRAIN.remove('SalePrice')
 # %%
-mat_train = np.matrix(df_train)
+mat_train = np.matrix(df_train[FEATURES])
 # mat_test  = np.matrix(test)
-mat_x = np.matrix(df_train.drop('SalePrice', axis = 1))
+mat_x = np.matrix(df_train[FEATURES_TRAIN])
 mat_y = np.matrix(df_train.SalePrice).reshape((-1,1))
 
 prepro_y = MinMaxScaler()
@@ -65,7 +74,7 @@ prepro.fit(mat_train)
 
 prepro_test = MinMaxScaler()
 prepro_test.fit(mat_x)
-df_train = pd.DataFrame(prepro.transform(mat_train),columns = list(df_train.columns))
+df_train = pd.DataFrame(prepro.transform(mat_train),columns = FEATURES)
 # %%
 # List of features
 COLUMNS = FEATURES
@@ -95,7 +104,7 @@ feature_cols = training_set[FEATURES_TRAIN]
 labels = training_set["SalePrice"].values
 # %%
 model = tf.keras.Sequential()
-model.add(Dense(300, input_dim=288, kernel_initializer='normal', activation='relu'))
+model.add(Dense(300, input_dim=len(FEATURES_TRAIN), kernel_initializer='normal', activation='relu'))
 model.add(Dense(300, kernel_initializer='normal', activation='relu'))
 model.add(Dense(200, kernel_initializer='normal', activation='relu'))
 model.add(Dense(200, kernel_initializer='normal', activation='relu'))
@@ -103,7 +112,9 @@ model.add(Dense(1, kernel_initializer='normal'))
 # Compile model
 model.compile(loss='mean_squared_error', optimizer=keras.optimizers.Adadelta())
 
-model.fit(np.array(feature_cols).astype('float32'), np.array(labels), epochs=2000, batch_size=10)
+model.fit(np.array(feature_cols).astype('float32'), np.array(labels), epochs=500, batch_size=10)
+model.fit(np.array(feature_cols).astype('float32'), np.array(labels), epochs=500, batch_size=10)
+model.fit(np.array(feature_cols).astype('float32'), np.array(labels), epochs=1000, batch_size=10)
 # %%
 model.evaluate(np.array(feature_cols), np.array(labels))
 # %%
@@ -133,7 +144,7 @@ ax.plot([reality.min(), reality.max()], [reality.min(), reality.max()], 'k--', l
 plt.show()
 mean_squared_error(predictions, reality)
 # %%
-mat_test = np.matrix(df_test)
+mat_test = np.matrix(df_test[FEATURES_TRAIN])
 test = pd.DataFrame(prepro_test.transform(mat_test),columns = FEATURES_TRAIN)
 # %%
 y_predict = model.predict(np.array(test))
