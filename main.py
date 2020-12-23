@@ -18,6 +18,8 @@ from scipy import stats
 from scipy.stats import norm, skew 
 # section one hot encoding
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import PowerTransformer
+
 
 
 # %%
@@ -68,13 +70,23 @@ sns.barplot(quants, train[quants].isna().sum(), order=train[quants].isna().sum()
 # %%
 # TODO -> REMOVING OUTLIERS FROM TRAINs
 ###
+#from sklearn.ensemble import IsolationForest
+# clf = IsolationForest(max_samples = 100, random_state = 42)
+# clf.fit(df_train)
+# y_noano = clf.predict(df_train)
+# y_noano = pd.DataFrame(y_noano, columns = ['Top'])
+# y_noano[y_noano['Top'] == 1].index.values
 
-# %% 
-# TODO -> SKEW FEATURES TO IMPROVE LINEAR MODELS
-###
+# df_train = df_train.iloc[y_noano[y_noano['Top'] == 1].index.values]
+# df_train.reset_index(drop = True, inplace = True)
+# print("Number of Outliers:", y_noano[y_noano['Top'] == -1].shape[0])
+# print("Number of rows without outliers:", df_train.shape[0])
+
 
 ##
 # TODO -> DIFFERENTIATE ORDINAL AND CATEGORICAL
+# ???? 
+
 
 
 # %%
@@ -97,6 +109,16 @@ train[quants] = train[quants].apply(lambda x: x.fillna(0))
 test[quants] = test[quants].apply(lambda x: x.fillna(0))
 
 
+
+# %% 
+# TODO -> SKEW FEATURES TO IMPROVE LINEAR MODELS
+### SKLEARN - powertransform
+pt = PowerTransformer() 
+pt.fit(train[quants])
+train[quants] = pt.transform(train[quants])
+
+
+
 # %% 
 # ONE HOT ENCODING VARIABLES
 # -> this makes sure no 'objects' remain in the train/test dataframes
@@ -107,6 +129,7 @@ test[quants] = test[quants].apply(lambda x: x.fillna(0))
 encoder = OneHotEncoder(handle_unknown="ignore")
 encoder.fit(train[cats])
 
+
 X = train.drop("SalePrice", axis=1)
 y = train["SalePrice"]
 
@@ -114,6 +137,16 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random
 
 X_train_en = encoder.transform(X_train[cats])
 X_test_en = encoder.transform(X_test[cats])
+
+
+
+# transformed = jobs_encoder.transform(data['Profession'].to_numpy().reshape(-1, 1))
+# #Create a Pandas DataFrame of the hot encoded column
+# ohe_df = pd.DataFrame(transformed, columns=jobs_encoder.get_feature_names())
+# #concat with original data
+# data = pd.concat([data, ohe_df], axis=1).drop(['Profession'], axis=1)
+
+
 
 
 
